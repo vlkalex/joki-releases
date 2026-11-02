@@ -17,11 +17,13 @@ main() {
   tmp=$(mktemp -d)
   trap 'hdiutil detach "${tmp}/mnt" -quiet 2>/dev/null || true; rm -rf "${tmp}"' EXIT
 
-  # The newest Mac release (the repo may also hold Android releases), resolved once so the DMG and its
-  # checksum come from the same release. GitHub lists releases newest first.
+  # The highest Mac version (the repo may also hold Android releases), resolved once so the DMG and its
+  # checksum come from the same release. By version number, not list order: releases made from the same
+  # commit can be listed in any order.
   local tag
   tag=$(curl -fsSL "https://api.github.com/repos/${repo}/releases?per_page=30" \
-    | grep -oE '"tag_name": *"macos-v[0-9]+(\.[0-9]+)*"' | head -1 | grep -oE 'macos-v[0-9.]+' || true)
+    | grep -oE '"tag_name": *"macos-v[0-9]+(\.[0-9]+)*"' | grep -oE 'macos-v[0-9.]+' \
+    | sort -t. -k1.8,1n -k2,2n -k3,3n -k4,4n | tail -1 || true)
   [[ "${tag}" =~ ^macos-v[0-9]+(\.[0-9]+)*$ ]] || { echo "Could not find the latest JOKI release." >&2; exit 1; }
   local base="https://github.com/${repo}/releases/download/${tag}"
 
